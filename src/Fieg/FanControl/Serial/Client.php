@@ -35,7 +35,9 @@ class Client extends EventEmitter
 
         $that = $this;
 
-        $this->stream->on('data', function($data, $stream) use ($that) {
+        $firstLine = true;
+
+        $this->stream->on('data', function($data, $stream) use ($that, &$firstLine) {
                 $that->buffer .= $data;
 
                 $newline = "\r\n";
@@ -44,7 +46,12 @@ class Client extends EventEmitter
                     $line = substr($this->buffer, 0, $pos);
                     $this->buffer = substr($this->buffer, $pos + strlen($newline));
 
-                    $that->emit('line', array($line, $that));
+                    if (!$firstLine) {
+                        $that->emit('line', array($line, $that));
+                    }
+
+                    $firstLine = false;
+
                 }
 
                 $that->emit('data', array($data, $that));
