@@ -42,9 +42,9 @@ class Client extends EventEmitter
 
                 $newline = "\r\n";
 
-                if (false !== $pos = strpos($this->buffer, $newline)) {
-                    $line = substr($this->buffer, 0, $pos);
-                    $this->buffer = substr($this->buffer, $pos + strlen($newline));
+                if (false !== $pos = strpos($that->buffer, $newline)) {
+                    $line = substr($that->buffer, 0, $pos);
+                    $that->buffer = substr($that->buffer, $pos + strlen($newline));
 
                     if (!$firstLine) {
                         $that->emit('line', array($line, $that));
