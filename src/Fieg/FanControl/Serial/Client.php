@@ -36,22 +36,23 @@ class Client extends EventEmitter
         $that = $this;
 
         $firstLine = true;
+        $buffer =& $this->buffer;
 
-        $this->stream->on('data', function($data, $stream) use ($that, &$firstLine) {
-                $that->buffer .= $data;
+        $this->stream->on('data', function($data, $stream) use ($that, &$firstLine, &$buffer) {
+                $buffer .= $data;
 
                 $newline = "\r\n";
 
-                if (false !== $pos = strpos($that->buffer, $newline)) {
-                    $line = substr($that->buffer, 0, $pos);
-                    $that->buffer = substr($that->buffer, $pos + strlen($newline));
+                if (false !== $pos = strpos($buffer, $newline)) {
+                    $line = substr($buffer, 0, $pos);
+                    $buffer = substr($buffer, $pos + strlen($newline));
 
+                    // firstline might contain crap
                     if (!$firstLine) {
                         $that->emit('line', array($line, $that));
                     }
 
                     $firstLine = false;
-
                 }
 
                 $that->emit('data', array($data, $that));
