@@ -1,0 +1,28 @@
+parameters:
+  database_driver: pdo_sqlite
+  database_memory: true
+  database_paths: [%kernel.root_dir%/../Entity]
+
+services:
+  loop:
+    class: React\EventLoop\LoopInterface
+    factory_class: \React\EventLoop\Factory
+    factory_method: create
+
+  doctrine.config:
+    class: Doctrine\ORM\Configuration
+    factory_class: Doctrine\ORM\Tools\Setup
+    factory_method: createAnnotationMetadataConfiguration
+    arguments:
+      - %database_paths%
+      - true
+
+  doctrine.entity_manager:
+    class: Doctrine\ORM\EntityManager
+    factory_class: Doctrine\ORM\EntityManager
+    factory_method: create
+    arguments:
+      -
+        driver: %database_driver%
+        memory: %database_memory%
+      - @doctrine.config

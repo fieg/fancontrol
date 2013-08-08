@@ -7,6 +7,8 @@
 
 namespace Fieg\FanControl\Command;
 
+use Doctrine\ORM\EntityManager;
+use Fieg\FanControl\Entity\TempReading;
 use Fieg\FanControl\Serial\Client;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -28,15 +30,34 @@ class ServerCommand extends Command
     {
         $kernel = $this->getApplication()->getKernel();
 
+        $container = $kernel->getContainer();
         $loop = $kernel->getLoop();
+
+        $loop->addPeriodicTimer(
+            5,
+            function () {
+                $kmem = memory_get_usage(true) / 1024;
+                echo "Memory: $kmem KiB\n";
+            }
+        );
+
+        /** @var EntityManager $em */
+        $em = $container->get('doctrine.entity_manager');
 
         $port = $input->getArgument('port');
 
         $client = new Client($loop);
         $client->listen($port);
 
-        $client->on('line', function($data, $client) {
-                var_dump($data);
+        $client->on('line', function($data, $client) use ($em) {
+                $temp = floatval($data);
+
+                $reading = new TempReading();
+                $reading->setTemp($temp);
+                $reading->setDatetimeReading(new \DateTime());
+
+                $em->persist($reading);
+                $em->flush($reading);
             }
         );
 
