@@ -1,0 +1,69 @@
+{% extends 'view/base.html.twig' %}
+
+{% block head %}
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script type="text/javascript">
+    google.load("visualization", "1", {packages:["corechart"]});
+    google.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+      var table = google.visualization.arrayToDataTable([
+        ['Time', 'Temp C'],
+      ]);
+
+      var options = {
+        title: 'Temperature',
+        curveType: 'function'
+      };
+
+      var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+      //chart.draw(table, options);
+
+      setInterval(function()  {
+        $.getJSON('/data.json', function (data) {
+          console.log(data.table);
+          table = google.visualization.arrayToDataTable(data.table);
+
+          chart.draw(table, options);
+        });
+      }, 1000);
+    }
+
+    (function($,sr){
+      // debouncing function from John Hann
+      // http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
+      var debounce = function (func, threshold, execAsap) {
+        var timeout;
+
+        return function debounced () {
+          var obj = this, args = arguments;
+          function delayed () {
+            if (!execAsap)
+              func.apply(obj, args);
+            timeout = null;
+          }
+
+          if (timeout)
+            clearTimeout(timeout);
+          else if (execAsap)
+            func.apply(obj, args);
+
+          timeout = setTimeout(delayed, threshold || 100);
+        };
+      };
+
+      // smartresize
+      jQuery.fn[sr] = function(fn){  return fn ? this.bind('resize', debounce(fn)) : this.trigger(sr); };
+
+    })(jQuery,'smartresize');
+
+    $(window).smartresize(function () {
+      chart.draw(data, options);
+    });
+  </script>
+{% endblock %}
+
+{% block body %}
+  <div id="chart_div" style="height: 50%;"></div>
+{% endblock %}

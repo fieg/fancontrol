@@ -1,6 +1,6 @@
 parameters:
   database_driver: pdo_sqlite
-  database_memory: true
+  database_path: /tmp/fancontrol.db
   database_paths: [%kernel.root_dir%/../Entity]
 
 services:
@@ -13,9 +13,7 @@ services:
     class: Doctrine\ORM\Configuration
     factory_class: Doctrine\ORM\Tools\Setup
     factory_method: createAnnotationMetadataConfiguration
-    arguments:
-      - %database_paths%
-      - true
+    arguments: [%database_paths%, true, ~, ~, false]
 
   doctrine.entity_manager:
     class: Doctrine\ORM\EntityManager
@@ -24,5 +22,13 @@ services:
     arguments:
       -
         driver: %database_driver%
-        memory: %database_memory%
+        path: %database_path%
       - @doctrine.config
+
+  twig.loader:
+    class: Twig_Loader_Filesystem
+    arguments: [%kernel.root_dir%/../Resources]
+
+  twig:
+    class: Twig_Environment
+    arguments: [@twig.loader]

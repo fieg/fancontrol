@@ -1,0 +1,8 @@
+{
+    "table": [
+        ["Time", "Temp C"],
+        {% for r in readings -%}
+        ["{{ r.datetimeReading|date("i:s") }}",  {{ r.temp }}]{% if not loop.last %},{% endif %}
+        {% endfor -%}
+    ]
+}
