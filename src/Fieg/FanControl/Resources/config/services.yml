@@ -9,6 +9,57 @@ services:
     factory_class: \React\EventLoop\Factory
     factory_method: create
 
+  event_dispatcher:
+    class: Symfony\Component\EventDispatcher\EventDispatcher
+    calls:
+      - [addSubscriber, [@kernel.router_listener]]
+      - [addSubscriber, [@kernel.exception_listener]]
+
+  controller_resolver:
+    class: Fieg\Fancontrol\Controller\ControllerResolver
+    arguments: [@service_container]
+
+  http.kernel:
+    class: Symfony\Component\HttpKernel\HttpKernel
+    arguments: [@event_dispatcher, @controller_resolver]
+
+  file_locator:
+    class: Symfony\Component\Config\FileLocator
+    arguments:
+      - [%kernel.root_dir%]
+
+  routes:
+    class: Symfony\Component\Routing\RouteCollection
+
+  request_context:
+    class: Symfony\Component\Routing\RequestContext
+
+  annotation_reader:
+    class: Doctrine\Common\Annotations\AnnotationReader
+
+  AnnotatedRouteControllerLoader:
+    class: Fieg\Fancontrol\Routing\AnnotatedRouteControllerLoader
+    arguments: [@annotation_reader]
+
+  AnnotationDirectoryLoader:
+    class: Symfony\Component\Routing\Loader\AnnotationDirectoryLoader
+    arguments: [@file_locator, @AnnotatedRouteControllerLoader, [%kernel.root_dir%/../Controller]]
+
+  route_collection:
+    class: Symfony\Component\Routing\RouteCollection
+
+  url_matcher:
+    class: Symfony\Component\Routing\Matcher\UrlMatcher
+    arguments: [@route_collection, @request_context]
+
+  kernel.router_listener:
+    class: Symfony\Component\HttpKernel\EventListener\RouterListener
+    arguments: [@url_matcher]
+
+  kernel.exception_listener:
+    class: Symfony\Component\HttpKernel\EventListener\ExceptionListener
+    arguments: ["Fieg\Fancontrol\Controller\ExceptionController::errorAction"]
+
   doctrine.config:
     class: Doctrine\ORM\Configuration
     factory_class: Doctrine\ORM\Tools\Setup

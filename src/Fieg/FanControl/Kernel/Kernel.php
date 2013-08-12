@@ -88,6 +88,8 @@ class Kernel
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
 
+        $container->set('service_container', $container);
+
         return $container;
     }
 }

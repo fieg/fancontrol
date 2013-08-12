@@ -4,9 +4,16 @@ namespace Fieg\FanControl\Controller;
 
 use Doctrine\ORM\EntityManager;
 use Fieg\FanControl\Entity\TempReading;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
 
 class DataController extends Controller
 {
+    /**
+     * @Route("/data.json")
+     *
+     * @return string
+     */
     public function indexAction()
     {
         /** @var \Twig_Environment $twig */
@@ -26,7 +33,9 @@ class DataController extends Controller
         /** @var TempReading[] $readings */
         $readings = $qb->getQuery()->getResult();
 
-        return $twig->render('view/Data/index.json.twig', array('readings' => $readings));
+        return new Response(
+            $twig->render('view/Data/index.json.twig', array('readings' => $readings))
+        );
     }
 }
 

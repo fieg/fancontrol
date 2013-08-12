@@ -2,14 +2,17 @@
 
 namespace Fieg\FanControl\Controller;
 
-abstract class Controller
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
+abstract class Controller implements ContainerAwareInterface
 {
     protected $container;
 
     /**
      * @param mixed $container
      */
-    public function setContainer($container)
+    public function setContainer(ContainerInterface $container = null)
     {
         $this->container = $container;
     }

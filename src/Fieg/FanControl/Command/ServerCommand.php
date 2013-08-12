@@ -8,9 +8,8 @@
 namespace Fieg\FanControl\Command;
 
 use Doctrine\ORM\EntityManager;
-use Fieg\FanControl\Controller\DataController;
-use Fieg\FanControl\Controller\HomepageController;
 use Fieg\FanControl\Entity\TempReading;
+use Fieg\FanControl\Kernel\Kernel;
 use Fieg\FanControl\Serial\Client;
 use React\Http\Request;
 use React\Http\Response;
@@ -18,6 +17,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\HttpKernel\HttpKernel;
+use Symfony\Component\Routing\Loader\AnnotationDirectoryLoader;
 
 class ServerCommand extends Command
 {
@@ -32,6 +33,7 @@ class ServerCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        /** @var Kernel $kernel */
         $kernel = $this->getApplication()->getKernel();
 
         $container = $kernel->getContainer();
@@ -48,39 +50,38 @@ class ServerCommand extends Command
             }
         );
 
-        $app = function(Request $request, Response $response) use ($container) {
-            switch ($request->getPath()) {
-                case '/':
-                    $controller = new HomepageController();
-                    $controller->setContainer($container);
+        /** @var AnnotationDirectoryLoader $annotationDirectoryLoader */
+        $annotationDirectoryLoader = $container->get('AnnotationDirectoryLoader');
 
-                    $output = $controller->indexAction();
-                    $response->writeHead(200, array('Content-Type' => 'text/html'));
-                    $response->end($output);
+        // loads routes
+        $container->set('route_collection', $annotationDirectoryLoader->load($container->getParameter('kernel.root_dir') . '/../Controller'));
 
-                    break;
-                case '/data.json':
-                    $controller = new DataController();
-                    $controller->setContainer($container);
-
-                    $output = $controller->indexAction();
-                    $response->writeHead(200, array('Content-Type' => 'application/json'));
-                    $response->end($output);
-
-                    break;
-                default:
-                    $response->writeHead(404, array('Content-Type' => 'text/text'));
-                    $response->end(sprintf("Not found\nThe path %s was not found", $request->getPath()));
-
-                    break;
-            }
-
-        };
+        /** @var HttpKernel $app */
+        $webapp = $container->get('http.kernel');
 
         $socket = new \React\Socket\Server($loop);
         $http = new \React\Http\Server($socket);
 
-        $http->on('request', $app);
+        $http->on(
+            'request',
+            function(Request $request, Response $response) use ($webapp) {
+                printf("[%s] %s %s\n", /*$response->getConnection()->getRemoteAddress()*/ '?.?.?.?', $request->getMethod(), $request->getPath());
+                $httpRequest = \Symfony\Component\HttpFoundation\Request::create(
+                    $request->getPath(),
+                    $request->getMethod(),
+                    $request->getQuery()
+                );
+
+                $httpResponse = $webapp->handle($httpRequest);
+
+                $headers = $httpResponse->headers->all();
+                $headers = array_map('array_shift', $headers);
+
+                $response->writeHead($httpResponse->getStatusCode(), $headers);
+
+                $response->end($httpResponse->getContent());
+            }
+        );
 
         $socket->listen(1337, '0.0.0.0');
 
